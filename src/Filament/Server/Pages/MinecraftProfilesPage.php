@@ -144,7 +144,7 @@ class MinecraftProfilesPage extends Page
         }
         $path = is_string($value) ? storage_path('app/'.ltrim($value, '/')) : '';
         if (! is_file($path)) {
-            throw new MinecraftToolkitException('Die Profildatei wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.profile_file_not_found'));
         }
 
         return (string) file_get_contents($path);

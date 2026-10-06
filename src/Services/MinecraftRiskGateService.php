@@ -22,14 +22,14 @@ class MinecraftRiskGateService
         'raw_properties' => 'risk_gate_raw_properties_admin_only',
     ];
 
-    /** @var array<string, string> */
+    /** @var array<string, string> Translation keys or literal labels. */
     private const LABELS = [
-        'startup_edits' => 'Startup-Änderungen',
-        'version_risk' => 'riskante Versionswechsel',
-        'package_removal' => 'Paketentfernung',
+        'startup_edits' => 'minecrafttoolkit::strings.messages.risk_label_startup_edits',
+        'version_risk' => 'minecrafttoolkit::strings.messages.risk_label_version_risk',
+        'package_removal' => 'minecrafttoolkit::strings.messages.risk_label_package_removal',
         'curseforge_usage' => 'CurseForge',
         'crossplay_setup' => 'Crossplay',
-        'raw_properties' => 'server.properties-Rohtext',
+        'raw_properties' => 'minecrafttoolkit::strings.messages.risk_label_raw_properties',
     ];
 
     public function assertAllowed(string $action, Server $server, ?User $user = null): void
@@ -45,16 +45,16 @@ class MinecraftRiskGateService
         }
 
         if ($user?->isRootAdmin()) {
-            $this->audit($server, $action, 'allowed', 'Risk-Gate durch Root-Admin passiert.');
+            $this->audit($server, $action, 'allowed', trans('minecrafttoolkit::strings.messages.risk_gate_root_allowed'));
 
             return;
         }
 
-        $label = self::LABELS[$action] ?? $action;
-        $this->audit($server, $action, 'denied', "Risk-Gate blockierte $label.");
+        $label = isset(self::LABELS[$action]) ? trans(self::LABELS[$action]) : $action;
+        $this->audit($server, $action, 'denied', trans('minecrafttoolkit::strings.messages.risk_gate_blocked', ['label' => $label]));
 
         throw new MinecraftToolkitException(
-            "$label ist in dieser Installation nur für Root-Administratoren erlaubt."
+            trans('minecrafttoolkit::strings.messages.risk_gate_root_only', ['label' => $label])
         );
     }
 

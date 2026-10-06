@@ -192,7 +192,7 @@ class MinecraftManagementPage extends Page implements HasSchemas
         }
         $path = is_string($value) ? storage_path('app/'.ltrim($value, '/')) : '';
         if ($path === '' || ! is_file($path)) {
-            throw new MinecraftToolkitException('Die hochgeladene Datei wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.upload_not_found'));
         }
 
         return [basename($path), (string) file_get_contents($path)];

@@ -41,12 +41,12 @@ class CheckMinecraftPostUpdateHealthJob implements ShouldQueue
         $failed = $failed || $correlatedCrash;
         MinecraftToolkitUpdateCheck::query()->where('package_id', $package->id)->latest('id')->first()?->update([
             'status' => $failed ? 'rollback_recommended' : 'healthy',
-            'message' => $failed ? ($correlatedCrash ? 'Resource Usage Alerts meldet nach dem Update einen Serverabsturz. Wiederherstellung empfohlen.' : 'Der Start-/Logtest war nicht erfolgreich. Stelle bei Bedarf das Toolkit-Backup wieder her.') : 'Der Serverstart und die aktuellen Logs sehen gesund aus.',
+            'message' => $failed ? ($correlatedCrash ? trans('minecrafttoolkit::strings.messages.health_crash_detected') : trans('minecrafttoolkit::strings.messages.health_start_failed')) : trans('minecrafttoolkit::strings.messages.health_ok'),
         ]);
         MinecraftToolkitLog::query()->create([
             'server_uuid' => $server->uuid, 'user_id' => null, 'action' => 'post_update_health',
             'level' => $failed ? 'warning' : 'success',
-            'message' => $failed ? 'Rollback empfohlen: Paket-Startprüfung fehlgeschlagen.' : 'Paket-Startprüfung erfolgreich.',
+            'message' => $failed ? trans('minecrafttoolkit::strings.messages.health_rollback_recommended') : trans('minecrafttoolkit::strings.messages.health_check_passed'),
             'context_json' => ['package_id' => $package->id],
         ]);
     }

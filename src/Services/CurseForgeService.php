@@ -32,7 +32,7 @@ class CurseForgeService
         $this->assertEnabled();
         $query = trim($query);
         if (mb_strlen($query) < 2) {
-            throw new MinecraftToolkitException('Die Suche muss mindestens zwei Zeichen enthalten.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.search_too_short'));
         }
 
         $params = $this->searchParameters($setup) + [
@@ -107,7 +107,7 @@ class CurseForgeService
     {
         $this->assertEnabled();
         if (! ctype_digit($projectId) || (int) $projectId <= 0) {
-            throw new MinecraftToolkitException('Die CurseForge-Modpack-ID ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_modpack_id_invalid'));
         }
 
         $project = $this->project((int) $projectId);
@@ -116,7 +116,7 @@ class CurseForgeService
             ->sortByDesc(fn (array $candidate): string => (string) ($candidate['fileDate'] ?? ''))
             ->first();
         if (! is_array($file)) {
-            throw new MinecraftToolkitException('Für dieses CurseForge-Modpack wurde keine Datei gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_modpack_no_file'));
         }
 
         $file = $this->serverPackFile($projectId, $file);
@@ -127,7 +127,7 @@ class CurseForgeService
             $downloadUrl = is_string($download['data'] ?? null) ? $download['data'] : null;
         }
         if ($downloadUrl === null) {
-            throw new MinecraftToolkitException('CurseForge liefert für dieses Modpack keine Download-URL.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_modpack_no_download_url'));
         }
 
         return [
@@ -147,7 +147,7 @@ class CurseForgeService
     {
         $this->assertEnabled();
         if (! ctype_digit($projectId) || (int) $projectId <= 0) {
-            throw new MinecraftToolkitException('Die CurseForge-Modpack-ID ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_modpack_id_invalid'));
         }
 
         return collect($this->rawModpackFiles($projectId))
@@ -202,13 +202,13 @@ class CurseForgeService
     {
         $this->assertEnabled();
         if (! ctype_digit($projectId) || ! ctype_digit($fileId)) {
-            throw new MinecraftToolkitException('Die CurseForge-Datei-ID ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_file_id_invalid'));
         }
 
         $response = $this->get("/mods/$projectId/files/$fileId");
         $file = $response['data'] ?? null;
         if (! is_array($file)) {
-            throw new MinecraftToolkitException('CurseForge liefert keine gültigen Dateiinformationen.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_file_info_invalid'));
         }
 
         $fileName = is_string($file['fileName'] ?? null) ? trim($file['fileName']) : '';
@@ -218,7 +218,7 @@ class CurseForgeService
             $downloadUrl = is_string($download['data'] ?? null) ? trim($download['data']) : '';
         }
         if ($fileName === '' || $downloadUrl === '') {
-            throw new MinecraftToolkitException('CurseForge liefert für eine Modpack-Datei keine Download-URL.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_modpack_file_no_download_url'));
         }
 
         return [
@@ -234,7 +234,7 @@ class CurseForgeService
     {
         $this->assertEnabled();
         if (! ctype_digit($projectId) || (int) $projectId <= 0) {
-            throw new MinecraftToolkitException('Die CurseForge-Projektkennung ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_project_id_invalid'));
         }
 
         $project = $this->project((int) $projectId);
@@ -254,7 +254,7 @@ class CurseForgeService
         if (! is_array($file)
             || ! is_string($file['fileName'] ?? null)
             || strtolower(pathinfo($file['fileName'], PATHINFO_EXTENSION)) !== 'jar') {
-            throw new MinecraftToolkitException('Keine kompatible CurseForge-JAR wurde gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_no_compatible_jar'));
         }
 
         $downloadUrl = is_string($file['downloadUrl'] ?? null) ? $file['downloadUrl'] : null;
@@ -264,7 +264,7 @@ class CurseForgeService
         }
         if ($downloadUrl === null) {
             throw new MinecraftToolkitException(
-                'CurseForge stellt für diese Datei keine API-Download-URL bereit.'
+                trans('minecrafttoolkit::strings.messages.curseforge_no_api_download_url')
             );
         }
 
@@ -286,7 +286,7 @@ class CurseForgeService
             ],
             'dependencies' => $this->dependencyDetails($file),
             'warning' => in_array($setup->software, ['fabric', 'forge', 'neoforge'], true)
-                ? 'CurseForge liefert keine verlässliche Client-/Server-Seite. Prüfe die Projektbeschreibung vor der Installation.'
+                ? trans('minecrafttoolkit::strings.messages.curseforge_side_unknown')
                 : null,
         ];
     }
@@ -485,7 +485,7 @@ class CurseForgeService
                 : $this->directRequest($path, $query);
 
             if (! is_array($response)) {
-                throw new MinecraftToolkitException('CurseForge hat eine ungültige Antwort geliefert.');
+                throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_invalid_response'));
             }
 
             return $response;
@@ -498,7 +498,7 @@ class CurseForgeService
                 'mode' => $this->usesProxy() ? 'proxy' : 'direct',
             ]);
             throw new MinecraftToolkitException(
-                'CurseForge ist derzeit nicht erreichbar. Versuche es später erneut.',
+                trans('minecrafttoolkit::strings.messages.curseforge_unavailable'),
                 previous: $exception
             );
         }
@@ -569,12 +569,12 @@ class CurseForgeService
     private function assertEnabled(): void
     {
         if (! (bool) config('minecrafttoolkit.curseforge_enabled', false)) {
-            throw new MinecraftToolkitException('CurseForge ist in den Plugin-Einstellungen deaktiviert.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.curseforge_disabled'));
         }
 
         if (! $this->usesProxy() && ! $this->apiKeyProvider->hasKey()) {
             throw new MinecraftToolkitException(
-                'CurseForge ist deaktiviert, weil weder ein Toolkit-Proxy noch ein lokaler CurseForge API-Key konfiguriert ist.'
+                trans('minecrafttoolkit::strings.messages.curseforge_not_configured')
             );
         }
     }
@@ -599,7 +599,7 @@ class CurseForgeService
         $key = $this->apiKeyProvider->getKey();
         if ($key === null) {
             throw new MinecraftToolkitException(
-                'CurseForge ist deaktiviert, weil weder ein Toolkit-Proxy noch ein lokaler CurseForge API-Key konfiguriert ist.'
+                trans('minecrafttoolkit::strings.messages.curseforge_not_configured')
             );
         }
 

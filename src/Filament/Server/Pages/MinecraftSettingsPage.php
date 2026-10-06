@@ -356,7 +356,7 @@ class MinecraftSettingsPage extends Page implements HasSchemas
                 ->title(trans('minecrafttoolkit::strings.settings_page.save_failed'))
                 ->body($exception instanceof MinecraftToolkitException
                     ? $exception->getMessage()
-                    : 'Wings oder die Serverdatei ist derzeit nicht erreichbar.')
+                    : trans('minecrafttoolkit::strings.messages.wings_or_file_unreachable'))
                 ->danger()
                 ->send();
         }

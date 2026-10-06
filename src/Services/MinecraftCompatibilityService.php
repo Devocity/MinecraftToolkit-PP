@@ -10,6 +10,7 @@ use BlueWolf\MinecraftToolkit\Models\MinecraftToolkitPackage;
 use BlueWolf\MinecraftToolkit\Models\MinecraftToolkitSetup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class MinecraftCompatibilityService
 {
@@ -63,7 +64,7 @@ class MinecraftCompatibilityService
         ?string $loaderVersion
     ): void {
         if (! array_key_exists($minecraftVersion, $this->software->versionOptions($setup->software))) {
-            throw new MinecraftToolkitException('Die gewählte Minecraft-Version ist nicht verfügbar.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.minecraft_version_unavailable'));
         }
         if (in_array($setup->software, ['fabric', 'forge', 'neoforge'], true)
             && (! is_string($loaderVersion)
@@ -71,7 +72,7 @@ class MinecraftCompatibilityService
                     $loaderVersion,
                     $this->software->loaderVersionOptions($setup->software, $minecraftVersion)
                 ))) {
-            throw new MinecraftToolkitException('Wähle eine gültige Loader-Version für das Ziel.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.target_loader_version_invalid'));
         }
     }
 
@@ -184,7 +185,7 @@ class MinecraftCompatibilityService
                     return $base + [
                         'status' => 'pinned',
                         'target_version' => (string) ($version['version_number'] ?? $version['name'] ?? $version['id']),
-                        'message' => 'Das Paket ist gepinnt und wird beim Versionswechsel nicht automatisch aktualisiert.',
+                        'message' => trans('minecrafttoolkit::strings.messages.compat_pinned'),
                     ];
                 }
 
@@ -192,12 +193,11 @@ class MinecraftCompatibilityService
                     'status' => $sameVersion ? 'compatible' : 'update_required',
                     'target_version' => (string) ($version['version_number'] ?? $version['name'] ?? $version['id']),
                     'message' => $sameVersion
-                        ? 'Die installierte Version unterstützt das Ziel.'
-                        : 'Eine kompatible Paketversion ist verfügbar und wird aktualisiert.',
+                        ? trans('minecrafttoolkit::strings.messages.compat_supported')
+                        : trans('minecrafttoolkit::strings.messages.compat_update_available'),
                 ];
             } catch (MinecraftToolkitException $exception) {
-                $unknown = str_contains($exception->getMessage(), 'nicht erreichbar')
-                    || str_contains($exception->getMessage(), 'deaktiviert');
+                $unknown = Str::contains($exception->getMessage(), ['nicht erreichbar', 'deaktiviert', 'unavailable', 'disabled']);
 
                 return $base + [
                     'status' => $unknown ? 'unknown' : 'incompatible',
@@ -217,7 +217,7 @@ class MinecraftCompatibilityService
                         ? 'compatible'
                         : ($package->update_pinned ? 'pinned' : 'system_update'),
                     'target_version' => $download['version'].'+'.$download['build'],
-                    'message' => 'Das Crossplay-Systempaket wird für den Zielserver beibehalten.',
+                    'message' => trans('minecrafttoolkit::strings.messages.compat_crossplay_kept'),
                 ];
             } catch (MinecraftToolkitException $exception) {
                 return $base + [
@@ -229,7 +229,7 @@ class MinecraftCompatibilityService
 
         return $base + [
             'status' => 'unknown',
-            'message' => 'Für diese Paketquelle sind keine verlässlichen Kompatibilitätsdaten verfügbar.',
+            'message' => trans('minecrafttoolkit::strings.messages.compat_no_data'),
         ];
     }
 }

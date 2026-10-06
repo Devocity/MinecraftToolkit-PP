@@ -72,10 +72,10 @@ class MinecraftSoftwareService
             'paper' => $this->resolvePaper($version),
             'folia' => $this->resolveFolia($version),
             'purpur' => $this->resolvePurpur($version),
-            'fabric' => throw new MinecraftToolkitException('Für Fabric muss eine Loader-Version ausgewählt werden.'),
-            'forge' => throw new MinecraftToolkitException('Für Forge muss eine Loader-Version ausgewählt werden.'),
-            'neoforge' => throw new MinecraftToolkitException('Für NeoForge muss eine Loader-Version ausgewählt werden.'),
-            default => throw new MinecraftToolkitException('Diese Serversoftware wird noch nicht unterstützt.'),
+            'fabric' => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.fabric_loader_required')),
+            'forge' => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.forge_loader_required')),
+            'neoforge' => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.neoforge_loader_required')),
+            default => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.software_unsupported')),
         };
     }
 
@@ -141,7 +141,7 @@ class MinecraftSoftwareService
             $loaderVersion,
             $this->loaderVersionOptions($software, $version)
         )) {
-            throw new MinecraftToolkitException('Wähle eine gültige Loader-Version.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.loader_version_invalid'));
         }
 
         return match ($software) {
@@ -236,13 +236,13 @@ class MinecraftSoftwareService
     {
         $entry = collect($this->vanillaManifest()['versions'] ?? [])->firstWhere('id', $version);
         if (! is_array($entry) || empty($entry['url'])) {
-            throw new MinecraftToolkitException("Vanilla $version wurde nicht gefunden.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.vanilla_not_found', ['version' => $version]));
         }
 
         $metadata = $this->json((string) $entry['url']);
         $url = Arr::get($metadata, 'downloads.server.url');
         if (! is_string($url)) {
-            throw new MinecraftToolkitException("Für Vanilla $version ist kein Server-Download verfügbar.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.vanilla_no_download', ['version' => $version]));
         }
 
         return ['url' => $url, 'source' => 'official', 'version_id' => $version];
@@ -256,7 +256,7 @@ class MinecraftSoftwareService
         $url = is_array($build) ? Arr::get($build, 'downloads.server:default.url') : null;
 
         if (! is_string($url)) {
-            throw new MinecraftToolkitException("Für Paper $version wurde kein Build gefunden.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.paper_no_build', ['version' => $version]));
         }
 
         return [
@@ -279,7 +279,7 @@ class MinecraftSoftwareService
     {
         $download = $this->bedrockDownload($version === 'latest' ? null : $version);
         if ($version !== 'latest' && $version !== $download['version']) {
-            throw new MinecraftToolkitException("Bedrock $version ist nicht als offizieller Linux-Download verfügbar. Aktuell verfügbar: {$download['version']}.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.bedrock_version_unavailable', ['version' => $version, 'available' => $download['version']]));
         }
 
         return [
@@ -297,7 +297,7 @@ class MinecraftSoftwareService
         $url = is_array($build) ? Arr::get($build, 'downloads.server:default.url') : null;
 
         if (! is_string($url)) {
-            throw new MinecraftToolkitException("Für Folia $version wurde kein Build gefunden.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.folia_no_build', ['version' => $version]));
         }
 
         return [
@@ -313,7 +313,7 @@ class MinecraftSoftwareService
         $data = $this->json("https://api.purpurmc.org/v2/purpur/$version");
         $latest = Arr::get($data, 'builds.latest');
         if (! is_string($latest) && ! is_int($latest)) {
-            throw new MinecraftToolkitException("Für Purpur $version wurde kein Build gefunden.");
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.purpur_no_build', ['version' => $version]));
         }
 
         return [
@@ -332,7 +332,7 @@ class MinecraftSoftwareService
             ? ($stableInstaller['version'] ?? null)
             : ($installers[0]['version'] ?? null);
         if (! is_string($installerVersion)) {
-            throw new MinecraftToolkitException('Für Fabric wurde keine Installer-Version gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.fabric_no_installer'));
         }
 
         return [
@@ -575,7 +575,7 @@ class MinecraftSoftwareService
 
             $normalized = str_replace('\/', '/', $html);
             if (! preg_match('~https://www\.minecraft\.net/bedrockdedicatedserver/bin-linux/bedrock-server-([0-9.]+)\.zip~', $normalized, $match)) {
-                throw new MinecraftToolkitException('Der offizielle Bedrock-Linux-Download konnte nicht gefunden werden.');
+                throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.bedrock_download_not_found'));
             }
 
             return [
@@ -618,7 +618,7 @@ class MinecraftSoftwareService
             ->body();
         $metadata = simplexml_load_string($xml);
         if ($metadata === false) {
-            throw new MinecraftToolkitException('Die Loader-Metadaten konnten nicht gelesen werden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.loader_metadata_unreadable'));
         }
 
         return collect($metadata->versioning->versions->version ?? [])
@@ -637,7 +637,7 @@ class MinecraftSoftwareService
             ->throw()
             ->body());
         if (! preg_match('/^[a-f0-9]{64}$/i', $checksum)) {
-            throw new MinecraftToolkitException('Die SHA-256-Prüfsumme des Loader-Installers ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.loader_installer_sha256_invalid'));
         }
 
         return strtolower($checksum);

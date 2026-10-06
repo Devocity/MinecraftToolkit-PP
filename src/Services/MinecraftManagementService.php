@@ -57,7 +57,7 @@ class MinecraftManagementService
             }
             $decoded = json_decode($json, true);
             if (! is_array($decoded) || array_is_list($decoded) === false) {
-                throw new MinecraftToolkitException("$name muss ein gültiges JSON-Array enthalten.");
+                throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.json_array_required', ['name' => $name]));
             }
             $this->files->writeAtomically($server, '/'.$name, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
         }
@@ -69,10 +69,10 @@ class MinecraftManagementService
         $oldName = $this->safeWorldName($oldName);
         $newName = $this->safeWorldName($newName);
         if (! $this->files->exists($server, '/'.$oldName)) {
-            throw new MinecraftToolkitException('Der bisherige Weltordner wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_old_not_found'));
         }
         if ($this->files->exists($server, '/'.$newName)) {
-            throw new MinecraftToolkitException('Der neue Weltordner existiert bereits.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_new_exists'));
         }
         $this->files->backupIfPresent($server, '/server.properties');
         $this->files->move($server, '/'.$oldName, '/'.$newName);
@@ -84,7 +84,7 @@ class MinecraftManagementService
     {
         $this->state->assertOffline($server);
         if (! preg_match('/^[A-Za-z0-9._-]+\.zip$/i', $fileName) || ! str_starts_with($contents, "PK\x03\x04")) {
-            throw new MinecraftToolkitException('Das Datapack muss ein gültiges ZIP-Archiv sein.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.datapack_invalid_zip'));
         }
         if (class_exists(\ZipArchive::class)) {
             $tmp = tempnam(sys_get_temp_dir(), 'mctk-datapack-');
@@ -97,7 +97,7 @@ class MinecraftManagementService
                 for ($index = 0; $index < $zip->numFiles; $index++) {
                     $entry = (string) $zip->getNameIndex($index);
                     if (str_contains($entry, '../') || str_starts_with($entry, '/')) {
-                        throw new MinecraftToolkitException('Das Datapack enthält einen unsicheren Pfad.');
+                        throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.datapack_unsafe_path'));
                     }
                 }
                 $zip->close();
@@ -114,7 +114,7 @@ class MinecraftManagementService
     {
         $download = $this->files->downloadContents($url, ['zip']);
         if (! str_starts_with($download['contents'], "PK\x03\x04")) {
-            throw new MinecraftToolkitException('Das Resource-Pack ist kein gültiges ZIP-Archiv.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.resourcepack_invalid_zip'));
         }
         $raw = $this->files->read($server, '/server.properties', 1048576);
         $this->files->writeAtomically($server, '/server.properties', $this->properties->patch($raw, [
@@ -130,11 +130,11 @@ class MinecraftManagementService
     public function writeServerIcon(Server $server, string $contents): void
     {
         if (! function_exists('imagecreatefromstring')) {
-            throw new MinecraftToolkitException('Die PHP-GD-Erweiterung wird für das Zuschneiden von Icons benötigt.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.gd_required'));
         }
         $source = @imagecreatefromstring($contents);
         if ($source === false) {
-            throw new MinecraftToolkitException('Das hochgeladene Bild ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.image_invalid'));
         }
         $width = imagesx($source);
         $height = imagesy($source);
@@ -197,7 +197,7 @@ class MinecraftManagementService
         $this->state->assertOffline($server);
         $worldName = $this->safeWorldName($worldName);
         if (! $this->files->exists($server, '/'.$worldName)) {
-            throw new MinecraftToolkitException('Der Weltordner wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_not_found'));
         }
         $directory = '/.minecraft-toolkit/world-backups';
         $this->files->makeDirectory($server, $directory);
@@ -206,7 +206,7 @@ class MinecraftManagementService
         $source = '/'.$name.'.tar.gz';
         $target = $directory.'/'.$name.'.tar.gz';
         if (! $this->files->exists($server, $source)) {
-            throw new MinecraftToolkitException('Wings hat das Weltarchiv nicht bestätigt.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_archive_unconfirmed'));
         }
         $this->files->move($server, $source, $target);
 
@@ -228,14 +228,14 @@ class MinecraftManagementService
         $this->state->assertOffline($server);
         $worldName = $this->safeWorldName($worldName);
         if (! preg_match('/^[0-9-]+-[A-Za-z0-9._-]+\.tar\.gz$/', $archiveName) || ! in_array($archiveName, $this->worldBackups($server), true)) {
-            throw new MinecraftToolkitException('Das Weltbackup ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_backup_invalid'));
         }
         $root = '/.minecraft-toolkit/world-backups';
         $this->files->decompress($server, $root, $archiveName);
         $extractedName = preg_replace('/^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-/', '', substr($archiveName, 0, -7));
         $extracted = $root.'/'.$extractedName;
         if (! $this->files->exists($server, $extracted)) {
-            throw new MinecraftToolkitException('Der extrahierte Weltordner wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_extracted_not_found'));
         }
         if ($this->files->exists($server, '/'.$worldName)) {
             $this->files->move($server, '/'.$worldName, $root.'/replaced-'.now()->format('Y-m-d-H-i-s').'-'.$worldName);
@@ -247,7 +247,7 @@ class MinecraftManagementService
     {
         $name = trim($name);
         if (! preg_match('/^[A-Za-z0-9._-]{1,64}$/', $name) || in_array($name, ['.', '..'], true)) {
-            throw new MinecraftToolkitException('Der Weltname ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.world_name_invalid'));
         }
 
         return $name;

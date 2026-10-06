@@ -19,7 +19,7 @@ class ModrinthService
         $this->assertEnabled();
         $query = trim($query);
         if (mb_strlen($query) < 2) {
-            throw new MinecraftToolkitException('Die Suche muss mindestens zwei Zeichen enthalten.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.search_too_short'));
         }
 
         $facets = $this->searchFacets($setup);
@@ -69,13 +69,13 @@ class ModrinthService
         $this->assertEnabled();
         $this->assertIdentifier($projectId);
         if (! in_array($setup->software, ['paper', 'purpur', 'folia', 'fabric', 'forge', 'neoforge'], true)) {
-            throw new MinecraftToolkitException('Diese Serversoftware unterstützt keine Modrinth-Pakete.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.software_no_modrinth'));
         }
 
         $project = $this->project($projectId);
         if (($project['project_type'] ?? null) !== 'mod'
             || ($project['server_side'] ?? 'unknown') === 'unsupported') {
-            throw new MinecraftToolkitException('Dieses Projekt ist nicht als serverseitiges Paket geeignet.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.project_not_server_side'));
         }
 
         $versions = $this->versions($projectId, $setup);
@@ -85,7 +85,7 @@ class ModrinthService
         ));
         $version = collect($versions)->firstWhere('version_type', 'release') ?? ($versions[0] ?? null);
         if (! is_array($version)) {
-            throw new MinecraftToolkitException('Keine kompatible Paketversion wurde gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.no_compatible_version'));
         }
 
         $file = collect($version['files'] ?? [])->firstWhere('primary', true)
@@ -94,7 +94,7 @@ class ModrinthService
             || ! is_string($file['url'] ?? null)
             || ! is_string($file['filename'] ?? null)
             || strtolower(pathinfo($file['filename'], PATHINFO_EXTENSION)) !== 'jar') {
-            throw new MinecraftToolkitException('Die kompatible Version enthält keine installierbare JAR-Datei.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.version_no_jar'));
         }
 
         $version['selected_file'] = $file;
@@ -107,7 +107,7 @@ class ModrinthService
             'version' => $version,
             'dependencies' => $dependencies,
             'warning' => $setup->software === 'folia'
-                ? 'Folia ist nicht automatisch mit jedem Paper-Plugin kompatibel. Prüfe die Projektbeschreibung, bevor du produktive Server migrierst.'
+                ? trans('minecrafttoolkit::strings.messages.folia_compat_warning')
                 : null,
         ];
     }
@@ -322,21 +322,21 @@ class ModrinthService
                 ->json();
         } catch (\Throwable $exception) {
             report($exception);
-            throw new MinecraftToolkitException('Modrinth ist derzeit nicht erreichbar. Versuche es später erneut.', previous: $exception);
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_unavailable'), previous: $exception);
         }
     }
 
     private function assertEnabled(): void
     {
         if (! (bool) config('minecrafttoolkit.modrinth_enabled', true)) {
-            throw new MinecraftToolkitException('Modrinth ist in den Minecraft-Toolkit-Einstellungen deaktiviert.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_disabled'));
         }
     }
 
     private function assertIdentifier(string $identifier): void
     {
         if (! preg_match('/^[A-Za-z0-9!@$()`.+,\'_-]{3,64}$/', $identifier)) {
-            throw new MinecraftToolkitException('Die Modrinth-Projektkennung ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_project_id_invalid'));
         }
     }
 }

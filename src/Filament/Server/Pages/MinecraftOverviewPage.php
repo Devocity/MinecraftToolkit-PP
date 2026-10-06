@@ -141,7 +141,7 @@ class MinecraftOverviewPage extends Page
                 'user_id' => user()?->id,
                 'action' => 'backup_restored',
                 'level' => 'warning',
-                'message' => "Backup $fileName wurde nach $targetPath wiederhergestellt.",
+                'message' => trans('minecrafttoolkit::strings.messages.backup_restored', ['file' => $fileName, 'path' => $targetPath]),
                 'context_json' => [
                     'backup_path' => $backupPath,
                     'file_name' => $fileName,

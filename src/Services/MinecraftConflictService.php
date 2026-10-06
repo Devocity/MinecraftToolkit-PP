@@ -22,15 +22,15 @@ class MinecraftConflictService
         $warnings = [];
         foreach (self::PAIRS as [$first, $second]) {
             if ($ids->contains($first) && $ids->contains($second)) {
-                $warnings[] = ['severity' => 'critical', 'message' => "$first und $second sind als möglicher Konflikt bekannt."];
+                $warnings[] = ['severity' => 'critical', 'message' => trans('minecrafttoolkit::strings.messages.conflict_known', ['first' => $first, 'second' => $second])];
             }
         }
         foreach ($packages as $package) {
             if ($package->package_type === 'mod' && $package->loader && ! in_array($package->loader, [$setup->loader, $setup->software], true)) {
-                $warnings[] = ['severity' => 'warning', 'message' => "{$package->project_name} wurde für {$package->loader} statt {$setup->software} installiert."];
+                $warnings[] = ['severity' => 'warning', 'message' => trans('minecrafttoolkit::strings.messages.conflict_wrong_loader', ['package' => $package->project_name, 'loader' => $package->loader, 'software' => $setup->software])];
             }
             if ($setup->software === 'folia' && $package->package_type === 'plugin' && ! str_contains(strtolower((string) $package->side), 'folia')) {
-                $warnings[] = ['severity' => 'warning', 'message' => "{$package->project_name} hat keine bestätigte Folia-Kennzeichnung."];
+                $warnings[] = ['severity' => 'warning', 'message' => trans('minecrafttoolkit::strings.messages.conflict_no_folia', ['package' => $package->project_name])];
             }
         }
 

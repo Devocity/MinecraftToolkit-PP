@@ -24,7 +24,7 @@ class MinecraftConversionService
     public function convert(Server $server, MinecraftToolkitSetup $setup, string $target): MinecraftToolkitSetup
     {
         if (! in_array($target, $this->targets($setup), true)) {
-            throw new MinecraftToolkitException('Diese Softwarekonvertierung wird nicht sicher unterstützt.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.conversion_unsupported'));
         }
         $this->state->assertOffline($server);
         $installation = $this->software->resolveInstallation($target, $setup->minecraft_version, null);
@@ -44,7 +44,7 @@ class MinecraftConversionService
             'source' => $target === 'purpur' ? 'purpur' : 'papermc', 'source_project_id' => $target, 'project_name' => ucfirst($target), 'loader' => $target,
             'version_number' => $installation['version_id'] ?? $setup->minecraft_version, 'download_url' => $installation['url'], 'sha1' => $metadata['sha1'], 'sha512' => $metadata['sha512'], 'installed_at' => now(),
         ]);
-        MinecraftToolkitLog::query()->create(['server_uuid' => $server->uuid, 'user_id' => user()?->id, 'action' => 'software_converted', 'level' => 'warning', 'message' => "$old wurde sicher zu $target konvertiert.", 'context_json' => ['from' => $old, 'to' => $target, 'backup' => $backup]]);
+        MinecraftToolkitLog::query()->create(['server_uuid' => $server->uuid, 'user_id' => user()?->id, 'action' => 'software_converted', 'level' => 'warning', 'message' => trans('minecrafttoolkit::strings.messages.software_converted', ['old' => $old, 'target' => $target]), 'context_json' => ['from' => $old, 'to' => $target, 'backup' => $backup]]);
 
         return $setup->refresh();
     }

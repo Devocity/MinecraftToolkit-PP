@@ -31,7 +31,7 @@ class MinecraftModpackService
         return match ($source) {
             'modrinth' => $this->searchModrinth($query, $offset, $limit),
             'curseforge' => $this->curseForge->searchModpacks($query, $offset, $limit),
-            default => throw new MinecraftToolkitException('Wähle eine gültige Modpack-Quelle.'),
+            default => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_source_invalid')),
         };
     }
 
@@ -47,7 +47,7 @@ class MinecraftModpackService
         $candidate = match ($source) {
             'modrinth' => $this->modrinthCandidate($projectId, $versionId),
             'curseforge' => $this->curseForgeCandidate($projectId, $versionId),
-            default => throw new MinecraftToolkitException('Wähle eine gültige Modpack-Quelle.'),
+            default => throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_source_invalid')),
         };
 
         $download = $this->files->downloadContents((string) $candidate['url'], ['mrpack', 'zip']);
@@ -75,7 +75,7 @@ class MinecraftModpackService
         }
 
         if ($source !== 'modrinth' || ! preg_match('/^[A-Za-z0-9_-]+$/', $projectId)) {
-            throw new MinecraftToolkitException('Die Modpack-Quelle oder Projekt-ID ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_source_or_id_invalid'));
         }
 
         $versions = Http::acceptJson()
@@ -102,19 +102,19 @@ class MinecraftModpackService
     ): MinecraftToolkitModpack {
         $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
         if (! is_string($path) || ! is_file($path)) {
-            throw new MinecraftToolkitException('Die hochgeladene Modpack-Datei konnte nicht gelesen werden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_upload_unreadable'));
         }
 
         $fileName = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($path);
         $fileName = $this->installer->safeFileName($fileName, ['mrpack', 'zip']);
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         if (! in_array($extension, ['mrpack', 'zip'], true)) {
-            throw new MinecraftToolkitException('Es können nur .mrpack- oder .zip-Modpacks hochgeladen werden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_upload_type'));
         }
 
         $contents = file_get_contents($path);
         if (! is_string($contents) || $contents === '') {
-            throw new MinecraftToolkitException('Die hochgeladene Modpack-Datei ist leer.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_upload_empty'));
         }
 
         return $this->installArchive($server, $setup, 'upload', [
@@ -134,7 +134,7 @@ class MinecraftModpackService
             ->where('server_uuid', $server->uuid)
             ->first();
         if (! $modpack instanceof MinecraftToolkitModpack) {
-            throw new MinecraftToolkitException('Das Modpack wurde nicht gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_not_found'));
         }
         if ((bool) $modpack->active) {
             return $modpack;
@@ -159,7 +159,7 @@ class MinecraftModpackService
             ->where('server_uuid', $server->uuid)
             ->update(['active' => false]);
         $modpack->forceFill(['active' => true])->save();
-        $this->log($server, 'modpack_activated', "{$modpack->name} wurde aktiviert.", ['modpack_id' => $modpack->id]);
+        $this->log($server, 'modpack_activated', trans('minecrafttoolkit::strings.messages.modpack_activated', ['name' => $modpack->name]), ['modpack_id' => $modpack->id]);
 
         return $modpack->refresh();
     }
@@ -168,7 +168,7 @@ class MinecraftModpackService
     private function searchModrinth(string $query, int $offset, int $limit): array
     {
         if (! (bool) config('minecrafttoolkit.modrinth_enabled', true)) {
-            throw new MinecraftToolkitException('Modrinth ist in den Minecraft-Toolkit-Einstellungen deaktiviert.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_disabled'));
         }
 
         $params = [
@@ -221,14 +221,14 @@ class MinecraftModpackService
             ->sortByDesc(fn (array $candidate): string => (string) ($candidate['date_published'] ?? ''))
             ->first();
         if (! is_array($version)) {
-            throw new MinecraftToolkitException('Für dieses Modrinth-Modpack wurde keine Version gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_modpack_no_version'));
         }
 
         $file = collect($version['files'] ?? [])
             ->filter(fn (mixed $candidate): bool => is_array($candidate) && is_string($candidate['url'] ?? null))
             ->first();
         if (! is_array($file)) {
-            throw new MinecraftToolkitException('Für dieses Modrinth-Modpack wurde keine Datei gefunden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modrinth_modpack_no_file'));
         }
 
         return [
@@ -321,7 +321,7 @@ class MinecraftModpackService
             throw $exception;
         }
 
-        $this->log($server, 'modpack_installed', "{$modpack->name} wurde installiert.", [
+        $this->log($server, 'modpack_installed', trans('minecrafttoolkit::strings.messages.modpack_installed', ['name' => $modpack->name]), [
             'modpack_id' => $modpack->id,
             'source' => $source,
             'mode' => $mode,
@@ -335,14 +335,14 @@ class MinecraftModpackService
     {
         $temp = tempnam(sys_get_temp_dir(), 'mctk-modpack-');
         if (! is_string($temp)) {
-            throw new MinecraftToolkitException('Temporäre Modpack-Datei konnte nicht erstellt werden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_temp_failed'));
         }
         file_put_contents($temp, $contents);
 
         $zip = new ZipArchive;
         if ($zip->open($temp) !== true) {
             @unlink($temp);
-            throw new MinecraftToolkitException('Das Modpack-Archiv konnte nicht geöffnet werden.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.modpack_archive_unreadable'));
         }
 
         try {

@@ -84,7 +84,7 @@ class MinecraftProfileService
         $payload = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
         $data = $payload['profile'] ?? null;
         if (($payload['format'] ?? null) !== 'minecraft-toolkit-profile-v1' || ! is_array($data) || ! is_array($data['software_json'] ?? null) || ! is_array($data['packages_json'] ?? null)) {
-            throw new MinecraftToolkitException('Die Profildatei ist ungültig.');
+            throw new MinecraftToolkitException(trans('minecrafttoolkit::strings.messages.profile_file_invalid'));
         }
 
         return MinecraftToolkitProfile::query()->create([

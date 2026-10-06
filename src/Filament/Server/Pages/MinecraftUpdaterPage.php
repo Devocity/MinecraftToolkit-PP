@@ -17,6 +17,7 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 class MinecraftUpdaterPage extends Page
@@ -424,8 +425,7 @@ class MinecraftUpdaterPage extends Page
                     'health' => $this->packageHealth($package, $check, $verifiedAfterInstall),
                     'can_install_dependencies' => $check?->status === 'error'
                         && is_string($check?->message)
-                        && (str_contains($check->message, 'Pflicht-Abhängigkeiten')
-                            || str_contains($check->message, 'Fehlende Plugin-Abhängigkeit')),
+                        && Str::contains($check->message, ['Pflicht-Abhängigkeiten', 'Fehlende Plugin-Abhängigkeit', 'Required dependencies', 'Missing plugin dependency']),
                     'can_delete' => ! $package->is_system_package,
                     'can_disable' => ! in_array($package->package_type, ['server_jar', 'server_binary'], true),
                     'admin_notes' => $package->admin_notes,
